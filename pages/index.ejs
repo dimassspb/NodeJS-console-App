@@ -16,6 +16,9 @@
         <title><%= title %></title>
     </head>
     <body>
+        <% if(created) { %>
+        <div class="alert alert-success">Note has bin created</div>
+        <% } %>
         <div class="container pt-5">
             <h1 class="text-center mb-3"><%= title %></h1>
 
