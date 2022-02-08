@@ -1,46 +1,99 @@
-const yargs = require("yargs");
-const pkg = require("./package.json");
-const { addNote, printNotes, removeNote } = require("./notes.controller");
+// const http = require("http");
+// const chalk = require("chalk");
+// const fs = require("fs/promises");
+// const path = require("path");
+// const { addNote } = require("./notes.controller");
 
-const version = pkg.version;
-console.log("version:", version);
+// const port = 4000;
+// const basePath = path.join(__dirname, "pages");
 
-yargs.command({
-    command: "add",
-    describe: "Add new note to list",
-    builder: {
-        title: {
-            type: "string",
-            describe: "Note title",
-            demandOption: true,
-        },
-    },
-    handler({ title }) {
-        addNote(title);
-    },
+// const server = http.createServer(async (req, res) => {
+//     if (req.method === "GET") {
+//         const content = await fs.readFile(path.join(basePath, "index.html"));
+//         res.setHeader("Content-Type", "text/html");
+//         res.writeHead(200);
+//         res.end(content);
+//     } else if (req.method === "POST") {
+//                 res.setHeader("Content-Type", "text/plain", "utf8");
+//                 res.writeHead(200);
+//         const body = [];
+//         req.on("data", (data) => {
+//             body.push(Buffer.from(data));
+//         });
+//         req.on("end", () => {
+//             const title = body.toString().split("=")[1].replaceAll("+", " ");
+//             console.log();
+//             addNote(title);
+//             res.end(`Title = ${title}`);
+//         });
+
+//     }
+// });
+
+// server.listen(port, () => {
+//     console.log(chalk.green(`Server has been started on port ${port}`));
+// });
+
+const fs = require("fs/promises");
+const path = require("path");
+
+const express = require("express");
+const chalk = require("chalk");
+const {
+    addNote,
+    getNotes,
+    removeNote,
+    editNote,
+} = require("./notes.controller");
+
+const port = 4000;
+
+const app = express();
+
+app.set("view engine", "ejs");
+app.set("views", "pages");
+app.use(express.static(path.resolve(__dirname, "public")));
+app.use(express.json());
+app.use(
+    express.urlencoded({
+        extended: true,
+    }),
+);
+
+app.get("/", async (req, res) => {
+    res.render("index", {
+        title: "Express App",
+        notes: await getNotes(),
+        created: false,
+    });
 });
 
-yargs.command({
-    command: "list",
-    describe: "Print all notes",
-    async handler() {
-        await printNotes();
-    },
+app.post("/", async (req, res) => {
+    await addNote(req.body.title);
+    res.render("index", {
+        title: "Express App",
+        notes: await getNotes(),
+        created: true,
+    });
 });
 
-yargs.command({
-    command: "remove",
-    describe: "Remove note",
-    builder: {
-        id: {
-            type: "string",
-            describe: "Remove note from list",
-            demandOption: true,
-        },
-    },
-    async handler({ id }) {
-        await removeNote(id);
-    },
+app.delete("/:id", async (req, res) => {
+    await removeNote(req.params.id);
+    res.render("index", {
+        title: "Express App",
+        notes: await getNotes(),
+        created: false,
+    });
 });
 
-yargs.parse();
+app.put("/:id", async (req, res) => {
+    await editNote(req.params.id, req.body.title);
+    res.render("index", {
+        title: "Express App",
+        notes: await getNotes(),
+    });
+});
+
+app.listen(port, () => {
+    console.log(chalk.green(`Server has been started on port ${port}`));
+});
